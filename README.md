@@ -1,4 +1,7 @@
 This repository shows the trajectories of participants laying down on a paddle surf on the morning of the 17th of september of 2024. In the following sections you will find an explanation of the protocol followed.
+
+[Click here to see the data](https://icatmar.github.io/EPSPFuraDelsBaus2024/)
+
 # European Performing Science Program (EPSP) - workshop #21
 ## Reto 1 - Deriva en el mar
 **Objective**: To validate the ocean currents measured by ICATMAR's high-frequency radars and study the pattern of dispersion.
