@@ -25,3 +25,6 @@ Wave conditions from the closest oceanographic buoy (N41.3235, E2.2072, Barcelon
 | 10:00 | 1.29m | 1.66m | 83º | 4.6s | 7.4s |
 | 11:00 | 1.19m | 2.11m | 84º | 4.4s | 7.4s |
 | 12:00 | 1.17m | 2.04m | 85º | 4.3s | 7.1s |
+
+### Other
+Extension used to download GPX tracks with timestamps from Strava: https://chromewebstore.google.com/detail/strava-export-gpx-track/kdemfmhkoncmbcphejembfngiihppkei?hl=en
