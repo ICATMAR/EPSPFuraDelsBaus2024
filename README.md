@@ -1,2 +1,8 @@
-# EPSPFuraDelsBaus2024
-Repository showing the trajectories of the participants laying down on a paddle surf on the morning of the 17th of september of 2024
+This repository shows the trajectories of participants laying down on a paddle surf on the morning of the 17th of september of 2024. In the following sections you will find an explanation of the protocol followed.
+# European Performing Science Program (EPSP) - workshop #21
+## Reto 1 - Deriva en el mar
+**Objective**: To validate the ocean currents measured by ICATMAR's high-frequency radars and study the pattern of dispersion.
+**Method**: A group of 19 participants will drift with the current for 30 minutes off the coast of Badalona beach. Each participant will track their position using a mobile app (Strava). At the start of the experiment, they will form a circle in the water to facilitate the measurement of dispersion over time.
+**The day before**: Participant's must install Strava in their phones and test it by recording a small track (walking for 5 minutes for example). They should charge the phone at night so it is at full capacity in the morning of the activity.
+**The day of the experiment**: Bring your smartphone and appropiate clothing for water sports and protection (sun glasses, sunblock, caps, water bottle...)
+**Protocol**: After appropiate instructions and indications about stand up paddling, participants start the tracking with the phone app. They paddle out for 10-20 minutes towards the open sea. At the appropiate location given by the researcher / instructor, the participants set themselves in a circle. The participants should keep a distance of a paddle between themselves. Once the circle is set, the instructor sets the starting time of the experiment and the participants lay down on their boards in a meditative state. After 30 minuts of drifting and / or given a signal from the instructor, the drifting activity stops and all participants can paddle back to the beach. Once the beach activity is finished, the participants send the tracking data to the researcher for further analysis and visualization.
