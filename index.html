@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drifting artists in stand-up paddels - ESPS Fundació Épica Fura dels Baus</title>
+  <meta name="description"
+    content="Several fish aggregating devices (FADs) were release at sea (NW Mediterranean) on spring 2024. This webiste shows the tracks of these drifters.">
+  <meta name="keywords" content="drifters, currents, Fura dels Baus, ICATMAR, ICM, CSIC">
+  <meta name="author" content="Gerard Llorach Tó">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="openlayers/ol.js"></script>
+  <link rel="stylesheet" href="openlayers/ol.css">
+  <style>
+    * {
+      font-family: cursive;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+    }
+
+    #slider-container {
+      position: absolute;
+      z-index: 1;
+      bottom: 100px;
+      width: 70%;
+      left: 50%;
+      transform: translateX(-50%);
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+
+      padding: 20px;
+      border-radius: 10px;
+      background: #7ab0df8a;
+
+    }
+
+    #time-slider {
+      width: 100%;
+    }
+
+    #time-display {
+      color: white;
+      text-shadow: 0 0 4px black;
+    }
+
+    .info {
+      position: absolute;
+      bottom: 20px;
+      font-size: large;
+      color: white;
+      text-shadow: 0 0 4px black;
+      width: 100vw;
+      text-align: center;
+    }
+
+    #buttons-container {
+      position: absolute;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      top: 50px;
+    }
+
+    .button-container {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .drifter-button {
+      margin: 2px;
+      user-select: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: #217ccd;
+      color: white;
+      text-shadow: 0 0 4px black;
+      border: none;
+      box-shadow: 0 0 4px black;
+    }
+
+    .drifter-button:hover {
+      transform: scale(1.1);
+      transition: all 0.5 ease-in-out;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Map -->
+  <div id="map" class="map"></div>
+  <!-- Time slider -->
+  <div id="slider-container">
+    <input type="range" id="time-slider" min="0" max="0" step="1" value="0">
+    <div id="time-display"></div>
+  </div>
+  <!-- Info -->
+  <div class="info">Data from EPSP #21 (Fundació Épica - Fura dels Baus), Visualization made by Gerard Llorach (ICATMAR,
+    ICM-CSIC)
+  </div>
+  <!-- Drifters on/off -->
+  <div id="buttons-container">
+    <!-- Slider offset lim start date -->
+    <input type="range" id="offset-time-slider" min="0" max="1" step="0.01" value="0.16">
+  </div>
+
+
+
+  <script>
+    // Load and parse the GPX data from XML
+    async function loadGPX(fileUrl) {
+      const response = await fetch(fileUrl);
+      const gpxText = await response.text();
+      const parser = new DOMParser();
+      const gpxDoc = parser.parseFromString(gpxText, "application/xml");
+      const trkpts = gpxDoc.getElementsByTagName("trkpt");
+      const track = [];
+      for (let i = 0; i < trkpts.length; i++) {
+        const lat = parseFloat(trkpts[i].getAttribute('lat'));
+        const lon = parseFloat(trkpts[i].getAttribute('lon'));
+        const time = new Date(trkpts[i].getElementsByTagName('time')[0].textContent);
+
+        track.push({
+          coords: [lon, lat],
+          time: time
+        });
+      }
+      return track;
+    }
+
+
+    // GPX file list
+    const gpxFiles = [];
+    for (let i = 1; i <= 17; i++) {
+      gpxFiles.push('tracks/' + String(i).padStart(2, '0') + '.gpx');
+    }
+
+
+    // Organize data by drifter ID
+    const drifterTracks = {};
+    const timestamps = [];
+    const timeOffsets = {}; // Store time offset for each drifter in minutes
+    // Manually set time offsets
+    const manualTimeOffsets = [28.58, 30.36, 29.14, 0.23, 30.58, 18.03, 30.73, 1.58, 23.4, 17.16, 28.92, 15.99, 27.14, 27.08, 31.6, 0, 26.75];
+    // Load data from all GPX files
+    async function loadAllGPXFiles() {
+      for (let i = 0; i < gpxFiles.length; i++) {
+        const id = `drifter${i + 1}`; // Unique ID for each drifter
+        drifterTracks[id] = await loadGPX(gpxFiles[i]);
+        drifterTracks[id].forEach(entry => timestamps.push(entry.time));
+        timeOffsets[id] = manualTimeOffsets[i]; // Initialize the offset to 0 minutes
+      }
+
+      timestamps.sort((a, b) => a - b);
+      return Array.from(new Set(timestamps));
+    }
+
+
+    // Create an OpenLayers map
+    const map = new ol.Map({
+      target: 'map',
+      layers: [
+        new ol.layer.Tile({
+          source: new ol.source.XYZ({ // https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/0
+            url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.png',
+            attributions: '© Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community',
+            cacheSize: 500,
+            crossOrigin: 'anonymous',
+          })
+        })
+      ],
+      view: new ol.View({
+        center: ol.proj.fromLonLat([2.256881, 41.450450]),  // Center on the initial coordinates
+        zoom: 18
+      })
+    });
+
+
+    const vectorSources = {}; // To keep track of vector sources for each drifter
+    const vectorLayers = {};  // To keep track of vector layers for each drifter
+    const tipSources = {};
+    const tipLayers = {};
+    const colors = generateRandomColors(25);
+    // Generate colors
+    function generateRandomColors(number) {
+      let colors = [];
+      for (let i = 0; i < number; i++) {
+        colors[i] = "hsla(" + 360 * Math.random() + ',' +
+          (25 + 70 * Math.random()) + '%,' +
+          (50 + 10 * Math.random()) + '%,' +
+          '0.85)';
+      }
+      return colors;
+    }
+
+
+    // Initialize vector layers
+    function initDrifterLayers() {
+      Object.keys(drifterTracks).forEach((id, index) => {
+        vectorSources[id] = new ol.source.Vector();
+        vectorLayers[id] = new ol.layer.Vector({
+          source: vectorSources[id]
+        });
+        map.addLayer(vectorLayers[id]);
+        // Initialize sources and layers for the tip circles
+        tipSources[id] = new ol.source.Vector();
+        tipLayers[id] = new ol.layer.Vector({
+          source: tipSources[id],
+          zIndex: 1,
+        });
+        map.addLayer(tipLayers[id]);
+      });
+    }
+
+
+    // Update drifter positions based on selected time
+    function updateDrifterPositions(selectedTime) {
+      selectedTime = selectedTime || timestamps[document.getElementById('time-slider').value];
+      const limStartDate = new Date(2024, 9 - 1, 17, 12, 28, 50);
+      let offsetLimStartValue = document.getElementById('offset-time-slider').value;
+      offsetLimStartValue *= 20 * 60 * 1000;
+
+      Object.keys(drifterTracks).forEach((id, index) => {
+        vectorSources[id].clear(); // Clear the source for each drifter
+        tipSources[id].clear();
+        const offsetMinutes = timeOffsets[id] * 60 * 1000; // Convert minutes to milliseconds
+        const track = drifterTracks[id].filter(entry => {
+          return (entry.time.getTime() - offsetMinutes <= selectedTime.getTime()) && ((entry.time.getTime() - offsetMinutes) > (limStartDate.getTime() + offsetLimStartValue))
+        }).map(entry => ol.proj.fromLonLat(entry.coords));
+
+        if (track.length > 0) {
+          const trackFeature = new ol.Feature({
+            geometry: new ol.geom.LineString(track)
+          });
+          trackFeature.setStyle(new ol.style.Style({
+            stroke: new ol.style.Stroke({
+              color: colors[index % colors.length],
+              width: 2
+            })
+          }));
+          vectorSources[id].addFeature(trackFeature);
+          // Create circle
+          const tipFeature = new ol.Feature({
+            geometry: new ol.geom.Point(track[track.length - 1])
+          });
+          tipFeature.setStyle(new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: 6,
+              fill: new ol.style.Fill({
+                color: colors[index % colors.length]
+              }),
+              stroke: new ol.style.Stroke({
+                color: '#000000',
+                width: 2
+              })
+            })
+          }));
+          tipSources[id].addFeature(tipFeature);
+        }
+      });
+    }
+
+    // Time slider functionality
+    function setupTimeSlider(uniqueTimestamps) {
+      const timeSlider = document.getElementById('time-slider');
+      const timeDisplay = document.getElementById('time-display');
+
+      timeSlider.max = uniqueTimestamps.length - 1;
+      timeSlider.oninput = function () {
+        const selectedTime = uniqueTimestamps[this.value];
+        timeDisplay.textContent = selectedTime.toLocaleString();
+        updateDrifterPositions(selectedTime);
+      };
+
+      // Offset limit start date
+      const offsetLimStartTime = document.getElementById('offset-time-slider');
+      offsetLimStartTime.oninput = function () {
+        updateDrifterPositions();
+      }
+
+      // Initialize display
+      const initIndex = Math.floor(uniqueTimestamps.length * 0.01);
+      timeSlider.value = initIndex;
+      timeDisplay.textContent = uniqueTimestamps[initIndex].toLocaleString();
+      updateDrifterPositions(uniqueTimestamps[initIndex]);
+    }
+
+    // Create toggle buttons for each drifter
+    function createToggleButtons() {
+      const buttonsContainer = document.getElementById('buttons-container');
+      Object.keys(drifterTracks).forEach((id, index) => {
+        // Drifter button container
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('button-container');
+
+
+        const button = document.createElement('button');
+        button.textContent = `FAD ${index + 1} ON/OFF`;
+        button.className = 'drifter-button';
+
+        // Create color ball
+        const ballEl = document.createElement('div');
+        ballEl.style['border-radius'] = '20px';
+        ballEl.style.width = '20px';
+        ballEl.style.height = '20px';
+        ballEl.style['box-shadow'] = '0 0 4px black';
+        ballEl.style.background = colors[index % colors.length];
+        button.appendChild(ballEl);
+
+        // Toggle visibility
+        button.onclick = function () {
+          const isVisible = !vectorLayers[id].getVisible();
+          vectorLayers[id].setVisible(isVisible);
+          tipLayers[id].setVisible(isVisible);
+          button.style.background = isVisible ? '#217ccd' : 'black';
+        };
+
+        buttonContainer.appendChild(button);
+
+        // Add slider
+        const timeAdditionSlider = document.createElement('input');
+        timeAdditionSlider.type = 'range';
+        timeAdditionSlider.min = '0';
+        timeAdditionSlider.max = '60';
+        timeAdditionSlider.value = manualTimeOffsets[index];
+        timeAdditionSlider.step = '0.01';
+
+        // Show time addition
+        const addedTimeEl = document.createElement('span');
+        addedTimeEl.textContent = manualTimeOffsets[index] + ' min';
+
+        timeAdditionSlider.oninput = () => {
+          timeOffsets[id] = parseFloat(timeAdditionSlider.value);
+          addedTimeEl.textContent = timeAdditionSlider.value + ' min';
+          updateDrifterPositions();
+        }
+        buttonContainer.appendChild(timeAdditionSlider);
+        buttonContainer.appendChild(addedTimeEl);
+
+        buttonsContainer.appendChild(buttonContainer);
+
+
+      });
+    }
+
+    // Main initialization function
+    async function init() {
+      const uniqueTimestamps = await loadAllGPXFiles();
+      initDrifterLayers();
+      createToggleButtons();
+      setupTimeSlider(uniqueTimestamps);
+    }
+
+    // Initialize the map and data
+    init();
+  </script>
+</body>
+
+</html>
