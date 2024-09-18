@@ -152,7 +152,7 @@
 
     // GPX file list
     const gpxFiles = [];
-    for (let i = 1; i <= 17; i++) {
+    for (let i = 1; i <= 25; i++) {
       gpxFiles.push('tracks/' + String(i).padStart(2, '0') + '.gpx');
     }
 
@@ -169,7 +169,7 @@
         const id = `drifter${i + 1}`; // Unique ID for each drifter
         drifterTracks[id] = await loadGPX(gpxFiles[i]);
         drifterTracks[id].forEach(entry => timestamps.push(entry.time));
-        timeOffsets[id] = manualTimeOffsets[i]; // Initialize the offset to 0 minutes
+        timeOffsets[id] = manualTimeOffsets[i] || 0; // Initialize the offset to 0 minutes
       }
 
       timestamps.sort((a, b) => a - b);
@@ -237,7 +237,7 @@
     // Update drifter positions based on selected time
     function updateDrifterPositions(selectedTime) {
       selectedTime = selectedTime || timestamps[document.getElementById('time-slider').value];
-      const limStartDate = new Date(2024, 9 - 1, 17, 11, 50, 0);
+      const limStartDate = new Date(2024, 9 - 1, 17, 9, 50, 0);
       let offsetLimStartValue = document.getElementById('offset-time-slider').value;
       offsetLimStartValue *= 90 * 60 * 1000;
 
@@ -289,7 +289,7 @@
       timeSlider.max = uniqueTimestamps.length - 1;
       timeSlider.oninput = function () {
         const selectedTime = uniqueTimestamps[this.value];
-        let modTime = new Date(selectedTime.getTime() - 90 * 60 * 1000); // HACK
+        let modTime = new Date(selectedTime.getTime() ); // HACK
         timeDisplay.textContent = modTime.toLocaleString();
         updateDrifterPositions(selectedTime);
       };
