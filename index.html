@@ -152,7 +152,7 @@
 
     // GPX file list
     const gpxFiles = [];
-    for (let i = 1; i <= 25; i++) {
+    for (let i = 1; i <= 27; i++) {
       gpxFiles.push('tracks/' + String(i).padStart(2, '0') + '.gpx');
     }
 
@@ -201,7 +201,7 @@
     const vectorLayers = {};  // To keep track of vector layers for each drifter
     const tipSources = {};
     const tipLayers = {};
-    const colors = generateRandomColors(25);
+    const colors = generateRandomColors(50);
     // Generate colors
     function generateRandomColors(number) {
       let colors = [];
