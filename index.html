@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="openlayers/ol.css">
   <style>
     * {
-      font-family: cursive;
+      font-family: sans-serif;
     }
 
     body {
@@ -100,6 +100,13 @@
       transition: all 0.5 ease-in-out;
     }
 
+    .imgSeaConditions {
+      position: absolute;
+      z-index: 1;
+      top: 20px;
+      right: 20px;
+    }
+
     .hidden {
       display: none;
     }
@@ -122,6 +129,9 @@
   <div id="buttons-container">
 
   </div>
+
+  <!-- Weather and sea conditions -->
+  <img class="imgSeaConditions" src="./img/weatherconditions.png" />
 
 
 
@@ -309,7 +319,7 @@
 
 
       // Initialize display
-      const startDriftingDate = new Date(2024, 9 -1, 17, 11, 4, 58);
+      const startDriftingDate = new Date(2024, 9 - 1, 17, 11, 4, 58);
       let startDriftingIndex = uniqueTimestamps.findIndex(date => date.getTime() > startDriftingDate.getTime());
       timeSlider.value = startDriftingIndex;
       timeDisplay.textContent = uniqueTimestamps[startDriftingIndex].toLocaleString();
