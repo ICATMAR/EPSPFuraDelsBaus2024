@@ -1,4 +1,4 @@
-This repository shows the trajectories of participants laying down on a paddle surf on the morning of the 17th of september of 2024. This experiment was done in the framework of the [European Performing Science Program](https://epsp.fundacionepica.org/). In the following sections you will find an explanation of the protocol followed.
+This repository shows the trajectories of participants laying down on a paddle surf on the morning of the 17th of september of 2024. This experiment was done in the framework of the [European Performing Science Program](https://epsp.fundacionepica.org/) and [ICATMAR](https://www.icatmar.cat/). In the following sections you will find an explanation of the protocol followed.
 
 [Click here to see the data](https://icatmar.github.io/EPSPFuraDelsBaus2024/)
 
