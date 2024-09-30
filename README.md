@@ -14,6 +14,8 @@ This repository shows the trajectories of participants laying down on a paddle s
 
 **Protocol**: After appropiate instructions and indications about stand up paddling, participants start the tracking with the phone app. They paddle out for 10-20 minutes towards the open sea. At the appropiate location given by the researcher / instructor, the participants set themselves in a circle. The participants should keep a distance of a paddle between themselves. Once the circle is set, the instructor sets the starting time of the experiment and the participants lay down on their boards in a meditative state. After 30 minuts of drifting and / or given a signal from the instructor, the drifting activity stops and all participants can paddle back to the beach. Once the beach activity is finished, the participants send the tracking data to the researcher for further analysis and visualization.
 
+![Experiment setup. Foto by Elisabetta Broglio](./img/experimentSetup.png)
+
 ## Meteo and Sea Conditions
 
 ### Currents
