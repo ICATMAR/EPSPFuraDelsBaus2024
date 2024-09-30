@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="openlayers/ol.css">
   <style>
     * {
-      font-family: cursive;
+      font-family: sans-serif;
     }
 
     body {
@@ -29,13 +29,20 @@
       position: absolute;
     }
 
-    #slider-container {
+    .bottom-container {
       position: absolute;
       z-index: 1;
-      bottom: 100px;
+      bottom: 20px;
+      width: 100vw;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #slider-container {
+
       width: 70%;
-      left: 50%;
-      transform: translateX(-50%);
 
       display: flex;
       flex-direction: column;
@@ -58,13 +65,11 @@
     }
 
     .info {
-      position: absolute;
-      bottom: 20px;
-      font-size: large;
+      font-size: medium;
       color: white;
       text-shadow: 0 0 4px black;
-      width: 100vw;
       text-align: center;
+      padding: 20px;
     }
 
     #buttons-container {
@@ -100,8 +105,24 @@
       transition: all 0.5 ease-in-out;
     }
 
+    .imgSeaConditions {
+      position: absolute;
+      z-index: 1;
+      top: 20px;
+      right: 20px;
+    }
+
+    .imgLogos {
+      max-height: 80px;
+      height: 10vw;
+    }
+
     .hidden {
       display: none;
+    }
+
+    a {
+      color: white
     }
   </style>
 </head>
@@ -109,25 +130,39 @@
 <body>
   <!-- Map -->
   <div id="map" class="map"></div>
-  <!-- Time slider -->
-  <div id="slider-container">
-    <input type="range" id="time-slider" min="0" max="0" step="1" value="0">
-    <div id="time-display"></div>
+  <div class="bottom-container">
+    <!-- Time slider -->
+    <div id="slider-container">
+      <input type="range" id="time-slider" min="0" max="0" step="1" value="0">
+      <div id="time-display"></div>
+    </div>
+    <!-- Info -->
+    <div class="info">Data from EPSP #21 (Fundació Épica - Fura dels Baus), Visualization made by Gerard Llorach
+      (ICATMAR,
+      ICM-CSIC).
+      <a href="https://github.com/ICATMAR/EPSPFuraDelsBaus2024" target="_blank">Click here for more info.</a>
+    </div>
+    <!-- Logos -->
+    <img class="imgLogos" src="./img/logos.png" />
   </div>
-  <!-- Info -->
-  <div class="info">Data from EPSP #21 (Fundació Épica - Fura dels Baus), Visualization made by Gerard Llorach (ICATMAR,
-    ICM-CSIC)
-  </div>
+
+
   <!-- Drifters on/off -->
   <div id="buttons-container">
-    <!-- Slider offset lim start date -->
-    <input type="range" id="offset-time-slider" min="0" max="1" step="0.01" value="0">
+
   </div>
+
+  <!-- Weather and sea conditions -->
+  <img class="imgSeaConditions" src="./img/weatherconditions.png" />
 
 
 
   <script>
-    const isDeveloper = false;
+
+    // Limit start and end dates
+    const limStartExperimentDate = new Date(2024, 9 - 1, 17, 10, 10, 0);
+    const limEndExperimentDate = new Date(2024, 9 - 1, 17, 11, 59, 0);
+
     // Load and parse the GPX data from XML
     async function loadGPX(fileUrl) {
       const response = await fetch(fileUrl);
@@ -152,7 +187,8 @@
 
     // GPX file list
     const gpxFiles = [];
-    for (let i = 1; i <= 17; i++) {
+
+    for (let i = 1; i <= 10; i++) {
       gpxFiles.push('tracks/' + String(i).padStart(2, '0') + '.gpx');
     }
 
@@ -160,16 +196,15 @@
     // Organize data by drifter ID
     const drifterTracks = {};
     const timestamps = [];
-    const timeOffsets = {}; // Store time offset for each drifter in minutes
-    // Manually set time offsets
-    const manualTimeOffsets = [28.58, 30.36, 29.14, 0.23, 30.58, 18.03, 30.73, 1.58, 23.4, 17.16, 28.92, 15.99, 27.14, 27.08, 31.6, 0, 26.75]; // HACK
     // Load data from all GPX files
     async function loadAllGPXFiles() {
       for (let i = 0; i < gpxFiles.length; i++) {
         const id = `drifter${i + 1}`; // Unique ID for each drifter
         drifterTracks[id] = await loadGPX(gpxFiles[i]);
-        drifterTracks[id].forEach(entry => timestamps.push(entry.time));
-        timeOffsets[id] = manualTimeOffsets[i]; // Initialize the offset to 0 minutes
+        drifterTracks[id].forEach(entry => {
+          if (entry.time.getTime() >= limStartExperimentDate.getTime() && entry.time.getTime() <= limEndExperimentDate.getTime())
+            timestamps.push(entry.time);
+        });
       }
 
       timestamps.sort((a, b) => a - b);
@@ -191,8 +226,8 @@
         })
       ],
       view: new ol.View({
-        center: ol.proj.fromLonLat([2.256881, 41.450450]),  // Center on the initial coordinates
-        zoom: 18
+        center: ol.proj.fromLonLat([2.258881, 41.448450]),  // Center on the initial coordinates
+        zoom: 17
       })
     });
 
@@ -237,16 +272,17 @@
     // Update drifter positions based on selected time
     function updateDrifterPositions(selectedTime) {
       selectedTime = selectedTime || timestamps[document.getElementById('time-slider').value];
-      const limStartDate = new Date(2024, 9 - 1, 17, 11, 50, 0);
-      let offsetLimStartValue = document.getElementById('offset-time-slider').value;
-      offsetLimStartValue *= 90 * 60 * 1000;
+      const limStartDate = new Date(2024, 9 - 1, 17, 11, 5, 0);
+      const limEndDate = new Date(2024, 9 - 1, 17, 11, 27, 0);
+
 
       Object.keys(drifterTracks).forEach((id, index) => {
         vectorSources[id].clear(); // Clear the source for each drifter
         tipSources[id].clear();
-        const offsetMinutes = timeOffsets[id] * 60 * 1000; // Convert minutes to milliseconds
         const track = drifterTracks[id].filter(entry => {
-          return (entry.time.getTime() - offsetMinutes <= selectedTime.getTime()) && ((entry.time.getTime() - offsetMinutes) > (limStartDate.getTime() + offsetLimStartValue))
+          return (entry.time.getTime() <= selectedTime.getTime())
+            && entry.time.getTime() <= limEndDate.getTime()
+            && ((entry.time.getTime()) > (limStartDate.getTime()))
         }).map(entry => ol.proj.fromLonLat(entry.coords));
 
         if (track.length > 0) {
@@ -260,9 +296,17 @@
             })
           }));
           vectorSources[id].addFeature(trackFeature);
-          // Create circle
+        }
+
+        const pointTrack = drifterTracks[id].filter(entry => {
+          return (entry.time.getTime() <= selectedTime.getTime())
+            && entry.time.getTime() <= limEndExperimentDate.getTime()
+            && ((entry.time.getTime()) > (limStartExperimentDate.getTime()))
+        }).map(entry => ol.proj.fromLonLat(entry.coords));
+        // Create circle
+        if (pointTrack.length > 0) {
           const tipFeature = new ol.Feature({
-            geometry: new ol.geom.Point(track[track.length - 1])
+            geometry: new ol.geom.Point(pointTrack[pointTrack.length - 1])
           });
           tipFeature.setStyle(new ol.style.Style({
             image: new ol.style.Circle({
@@ -289,24 +333,19 @@
       timeSlider.max = uniqueTimestamps.length - 1;
       timeSlider.oninput = function () {
         const selectedTime = uniqueTimestamps[this.value];
-        let modTime = new Date(selectedTime.getTime() - 90 * 60 * 1000); // HACK
+        let modTime = new Date(selectedTime.getTime()); // HACK
         timeDisplay.textContent = modTime.toLocaleString();
         updateDrifterPositions(selectedTime);
       };
 
-      // Offset limit start date
-      const offsetLimStartTime = document.getElementById('offset-time-slider');
-      if (!isDeveloper)
-        offsetLimStartTime.classList.add('hidden');
-      offsetLimStartTime.oninput = function () {
-        updateDrifterPositions();
-      }
+
 
       // Initialize display
-      const initIndex = Math.floor(uniqueTimestamps.length * 0.01);
-      timeSlider.value = initIndex;
-      timeDisplay.textContent = uniqueTimestamps[initIndex].toLocaleString();
-      updateDrifterPositions(uniqueTimestamps[initIndex]);
+      const startDriftingDate = new Date(2024, 9 - 1, 17, 11, 4, 58);
+      let startDriftingIndex = uniqueTimestamps.findIndex(date => date.getTime() > startDriftingDate.getTime());
+      timeSlider.value = startDriftingIndex;
+      timeDisplay.textContent = uniqueTimestamps[startDriftingIndex].toLocaleString();
+      updateDrifterPositions(uniqueTimestamps[startDriftingIndex]);
     }
 
     // Create toggle buttons for each drifter
@@ -341,31 +380,6 @@
 
         buttonContainer.appendChild(button);
 
-        // Add slider
-        const timeAdditionSlider = document.createElement('input');
-        timeAdditionSlider.type = 'range';
-        timeAdditionSlider.min = '0';
-        timeAdditionSlider.max = '60';
-        timeAdditionSlider.value = manualTimeOffsets[index];
-        timeAdditionSlider.step = '0.01';
-        
-        // Show time addition
-        const addedTimeEl = document.createElement('span');
-        addedTimeEl.textContent = manualTimeOffsets[index] + ' min';
-        
-        // Hide if not developer
-        if (!isDeveloper) {
-          timeAdditionSlider.classList.add('hidden');
-          addedTimeEl.classList.add('hidden');
-        }
-
-        timeAdditionSlider.oninput = () => {
-          timeOffsets[id] = parseFloat(timeAdditionSlider.value);
-          addedTimeEl.textContent = timeAdditionSlider.value + ' min';
-          updateDrifterPositions();
-        }
-        buttonContainer.appendChild(timeAdditionSlider);
-        buttonContainer.appendChild(addedTimeEl);
 
         buttonsContainer.appendChild(buttonContainer);
 
